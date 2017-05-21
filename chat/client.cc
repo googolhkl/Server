@@ -59,10 +59,12 @@ void *send_message(void *arg) // send thread main
 		fgets(message, BUF_SIZE, stdin);
 		if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
 		{
+			printf("close!\n");
 			close(sock);
 			exit(0);
 		}
 		sprintf(name_message, "%s %s", name, message);
+		write(sock, name_message, strlen(name_message));
 	}
 	return NULL;
 }
@@ -77,7 +79,10 @@ void *receive_message(void *arg) // read thread main
 	{
 		string_length = read(sock, name_message, NAME_SIZE + BUF_SIZE - 1);
 		if(string_length == -1)
+		{
+			printf("return!\n");
 			return (void*)-1;
+		}
 		name_message[string_length] = 0;
 		fputs(name_message, stdout);
 	}
