@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&mutex, NULL);
 	server_socket = socket(PF_INET,SOCK_STREAM, 0);
 
-	memset(&server_socket, 0, sizeof(server_socket));
+	memset(&server_address, 0, sizeof(server_socket));
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server_address.sin_port = htons(atoi(argv[1]));
