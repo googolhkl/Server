@@ -64,7 +64,7 @@ void *send_message(void *arg) // send thread main
 			exit(0);
 		}
 		sprintf(name_message, "%s %s", name, message);
-		write(sock, name_message, strlen(name_message));
+		send(sock, name_message, strlen(name_message) + 1, 0);
 	}
 	return NULL;
 }
@@ -77,7 +77,7 @@ void *receive_message(void *arg) // read thread main
 
 	while(1)
 	{
-		string_length = read(sock, name_message, NAME_SIZE + BUF_SIZE - 1);
+		string_length = recv(sock, name_message, sizeof(name_message), 0);
 		if(string_length == -1)
 		{
 			printf("return!\n");
