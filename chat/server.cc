@@ -96,7 +96,7 @@ void send_message(char *message, int length) // send to all
 	int i;
 	pthread_mutex_lock(&mutex);
 	for(i = 0; i < client_count; i++)
-		write(client_sockets[i], message, length);
+		send(client_sockets[i], message, length, MSG_DONTWAIT);
 	pthread_mutex_unlock(&mutex);
 }
 
