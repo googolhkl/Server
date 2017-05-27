@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define BUF_SIZE 100
 #define MAX_CLIENT 256
@@ -16,15 +17,17 @@ void error_handling(char *message);
 
 int client_count = 0;
 int client_sockets[MAX_CLIENT];
-pthread_mutex_t mutex;
+static sem_t semaphore;
 
 int main(int argc, char *argv[])
 {
 	int server_socket;
 	int client_socket;
+
 	struct sockaddr_in server_address;
 	struct sockaddr_in client_address;
 	socklen_t client_address_size;
+
 	pthread_t thread_id;
 
 	if(argc != 2)
@@ -33,7 +36,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	pthread_mutex_init(&mutex, NULL);
+	sem_init(&semaphore, 0, 1);
 	server_socket = socket(PF_INET,SOCK_STREAM, 0);
 
 	memset(&server_address, 0, sizeof(server_socket));
@@ -42,25 +45,26 @@ int main(int argc, char *argv[])
 	server_address.sin_port = htons(atoi(argv[1]));
 
 	if(bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address)) == -1)
-		error_handling("bind() error");
+		error_handling((char*)"bind() error");  // you should convert const char* to char *
 	
 	if(listen(server_socket, 5) == -1)
-		error_handling("listen() error");
+		error_handling((char*)"listen() error");
 
 	while(1)
 	{
 		client_address_size = sizeof(client_address);
 		client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_size);
 
-		pthread_mutex_lock(&mutex);
+		sem_wait(&semaphore);
 		client_sockets[client_count++] = client_socket;
-		pthread_mutex_unlock(&mutex);
+		sem_post(&semaphore);
 
 		pthread_create(&thread_id, NULL, handle_client, (void*)&client_socket);
 		pthread_detach(thread_id);
 		printf("Connected client IP: %s \n", inet_ntoa(client_address.sin_addr));
 
 	}
+	sem_destroy(&semaphore);
 	close(server_socket);
 	return 0;
 }
@@ -75,7 +79,7 @@ void *handle_client(void *arg)
 	while((string_length = read(client_socket, message, sizeof(message))) != 0)
 		send_message(message, string_length);
 
-	pthread_mutex_lock(&mutex);
+	sem_wait(&semaphore);
 	for(i = 0; i < client_count; i++) // remove disconnected client  TODO: replace with vector
 	{
 		if(client_socket == client_sockets[i])
@@ -86,7 +90,7 @@ void *handle_client(void *arg)
 		}
 	}
 	client_count--;
-	pthread_mutex_unlock(&mutex);
+	sem_post(&semaphore);
 	close(client_socket);
 	return NULL;
 }
@@ -94,10 +98,10 @@ void *handle_client(void *arg)
 void send_message(char *message, int length) // send to all
 {
 	int i;
-	pthread_mutex_lock(&mutex);
+	sem_wait(&semaphore);
 	for(i = 0; i < client_count; i++)
 		send(client_sockets[i], message, length, MSG_DONTWAIT);
-	pthread_mutex_unlock(&mutex);
+	sem_post(&semaphore);
 }
 
 void error_handling(char *message)
