@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define BUF_SIZE 100
 #define NAME_SIZE 20
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
 	if(argc != 4)
 	{
 		printf("Usage: %s <Server IP> <Server Port> <name>\n", argv[0]);
-		exit(1);
+		return 1;
 	}
 
 	sprintf(name, "[%s]", argv[3]);
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 	server_address.sin_port = htons(atoi(argv[2]));
 
 	if(connect(sock, (struct sockaddr*) &server_address, sizeof(server_address)) == -1)
-		error_handling("connect() error");
+		error_handling((char*)"connect() error");
 
 	pthread_create(&sender_thread, NULL, send_message, (void*)&sock);
 	pthread_create(&receiver_thread, NULL, receive_message, (void*)&sock);
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
 
 void *send_message(void *arg) // send thread main
 {
+	printf("send_message\n");
 	int sock = *((int*)arg);
 	char name_message[NAME_SIZE + BUF_SIZE];
 
@@ -61,7 +63,7 @@ void *send_message(void *arg) // send thread main
 		{
 			printf("close!\n");
 			close(sock);
-			exit(0);
+			return (void*)0;
 		}
 		sprintf(name_message, "%s %s", name, message);
 		send(sock, name_message, strlen(name_message) + 1, 0);
@@ -71,6 +73,7 @@ void *send_message(void *arg) // send thread main
 
 void *receive_message(void *arg) // read thread main
 {
+	printf("receive_message\n");
 	int sock = *((int*)arg);
 	char name_message[NAME_SIZE + BUF_SIZE];
 	int string_length;
