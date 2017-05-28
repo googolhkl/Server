@@ -2,7 +2,9 @@ CC = g++
 SERVER = server
 CLIENT = client
 ALL = $(SERVER) $(CLIENT)
+VERSION = -std=c++11
 
+#THREAD = -D_REENTRANT -lpthread # -D_REENTRANT: Thread safe, # -lpthread: for thread
 THREAD = -D_REENTRANT -lpthread # -D_REENTRANT: Thread safe, # -lpthread: for thread
 
 all: $(ALL)
@@ -10,19 +12,19 @@ all: $(ALL)
 server: $(SERVER)
 
 $(SERVER): server.o
-	$(CC) -o $(SERVER) server.o $(THREAD)
+	$(CC) $(VERSION) -o $(SERVER) server.o $(THREAD)
 
 server.o: server.cc
-	$(CC) -c -o server.o server.cc
+	$(CC) $(VERSION) -c -o server.o server.cc 
 
 
 client: $(CLIENT)
 
 $(CLIENT): client.o
-	$(CC) -o $(CLIENT) client.o $(THREAD)
+	$(CC) $(VERSION) -o $(CLIENT) client.o $(THREAD)
 
 client.o: client.cc
-	$(CC) -c -o client.o client.cc
+	$(CC) $(VERSION) -c -o client.o client.cc
 
 
 clean:
