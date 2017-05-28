@@ -4,97 +4,106 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <pthread.h>
-#include <semaphore.h>
+
+#include <iostream>
+#include <thread>
 
 #define BUF_SIZE 100
 #define NAME_SIZE 20
 
-void *send_message(void *arg);
-void *receive_message(void *arg);
-void error_handling(char *message);
+using std::cout;
+using std::cin;
+using std::endl;
 
-char name[NAME_SIZE] = "[DEFAULT}";
-char message[BUF_SIZE];
+class ChatClient
+{
+private:
+	static char name[NAME_SIZE];
+	static char message[BUF_SIZE];
+
+	int sock;
+	struct sockaddr_in serverAddress;
+
+public:
+	ChatClient(const char *serverIP, const char *serverPort, const char *clientName)
+	{
+		sprintf(this->name, "[%s]", clientName);
+		this->sock = socket(PF_INET, SOCK_STREAM, 0);
+
+		memset(&serverAddress, 0, sizeof(serverAddress));
+		serverAddress.sin_family = AF_INET;
+		serverAddress.sin_addr.s_addr = inet_addr(serverIP); // x.x.x.x(IPv4)로 되어있는 텍스트를 빅엑디언 네트워크 주소로 바꾼다.
+		serverAddress.sin_port = htons(atoi(serverPort));
+	}
+
+	~ChatClient()
+	{
+		close(sock);
+	}
+
+	void Start()
+	{
+		if(connect(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1)
+			SendException("connect() 에러발생");
+
+		std::thread senderThread(SendMessage, (void*)&(this->sock));
+		std::thread receiverThread(ReceiveMessage, (void*)&(this->sock));
+		senderThread.join();
+		receiverThread.join();
+	}
+
+	static void *SendMessage(void *socket)
+	{
+		int sock = *((int*)socket);
+		char nameMessage[NAME_SIZE + BUF_SIZE];
+
+		while(1)
+		{
+			fgets(message, BUF_SIZE, stdin);
+			if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
+			{
+				close(sock);
+				return (void*)0;
+			}
+			sprintf(nameMessage, "%s %s", name, message);
+			send(sock, nameMessage, strlen(nameMessage) +1, 0);
+		}
+		return NULL;
+	}
+
+	static void *ReceiveMessage(void *socket)
+	{
+		int sock = *((int*)socket);
+		char nameMessage[NAME_SIZE + BUF_SIZE];
+
+		while(1)
+		{
+			int stringLength = recv(sock, nameMessage, sizeof(nameMessage), 0);
+			if(stringLength == -1)
+			{
+				return (void*)-1;
+			}
+			nameMessage[stringLength] = 0;
+			fputs(nameMessage, stdout);
+		}
+		return NULL;
+	}
+
+	void SendException(const char *message)
+	{
+		cout<<message<<endl;
+	}
+};
+
+char ChatClient::name[NAME_SIZE] = "[Anonymous]";
+char ChatClient::message[BUF_SIZE] = {0,};
+
 
 int main(int argc, char *argv[])
 {
-	int sock;
-	struct sockaddr_in server_address;
-	pthread_t sender_thread;
-	pthread_t receiver_thread;
-	void *thread_return;
-
-	if(argc != 4)
-	{
-		printf("Usage: %s <Server IP> <Server Port> <name>\n", argv[0]);
-		return 1;
-	}
-
-	sprintf(name, "[%s]", argv[3]);
-	sock = socket(PF_INET, SOCK_STREAM, 0);
-
-	memset(&server_address, 0, sizeof(server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = inet_addr(argv[1]); // convert decimal IP address to big endian 32bit address # FIXME: replace inet_addr to 
-	server_address.sin_port = htons(atoi(argv[2]));
-
-	if(connect(sock, (struct sockaddr*) &server_address, sizeof(server_address)) == -1)
-		error_handling((char*)"connect() error");
-
-	pthread_create(&sender_thread, NULL, send_message, (void*)&sock);
-	pthread_create(&receiver_thread, NULL, receive_message, (void*)&sock);
-	pthread_join(sender_thread,&thread_return);
-	pthread_join(receiver_thread,&thread_return);
-	close(sock);
+	cout<<"클라이언트 접속 시도"<<endl;
+	ChatClient *client = new ChatClient("52.78.193.49", "9000", "Tester");
+	client->Start();
 	return 0;
 }
 
-void *send_message(void *arg) // send thread main
-{
-	printf("send_message\n");
-	int sock = *((int*)arg);
-	char name_message[NAME_SIZE + BUF_SIZE];
-
-	while(1)
-	{
-		fgets(message, BUF_SIZE, stdin);
-		if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
-		{
-			printf("close!\n");
-			close(sock);
-			return (void*)0;
-		}
-		sprintf(name_message, "%s %s", name, message);
-		send(sock, name_message, strlen(name_message) + 1, 0);
-	}
-	return NULL;
-}
-
-void *receive_message(void *arg) // read thread main
-{
-	printf("receive_message\n");
-	int sock = *((int*)arg);
-	char name_message[NAME_SIZE + BUF_SIZE];
-	int string_length;
-
-	while(1)
-	{
-		string_length = recv(sock, name_message, sizeof(name_message), 0);
-		if(string_length == -1)
-		{
-			printf("return!\n");
-			return (void*)-1;
-		}
-		name_message[string_length] = 0;
-		fputs(name_message, stdout);
-	}
-	return NULL;
-}
-
-void error_handling(char *message)
-{
-	fputs(message, stderr);
-	fputc('\n', stderr);
-	exit(1);
-}
