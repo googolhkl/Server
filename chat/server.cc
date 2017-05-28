@@ -6,10 +6,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <semaphore.h>
 
 #include <iostream>
+#include <thread>
 
 #define BUF_SIZE 100
 #define MAX_CLIENT 256
@@ -43,7 +43,6 @@ private:
 	sockaddr_in serverAddress;
 	sockaddr_in clientAddress;
 	socklen_t clientAddressSize;
-	pthread_t serverThreadId;
 
 public:
 	ChatServer(const char *port)
@@ -85,10 +84,8 @@ public:
 			clientSockets[clientCount++] = clientSocket;
 			sem_post(&(semaphore.get()));
 
-			pthread_create(&serverThreadId, NULL, ClientHandler, (void*)&clientSocket);
-			pthread_detach(serverThreadId);
-			//std::thread serverThread(ClientHandler);
-			//serverThread.join();
+			std::thread serverThread(ClientHandler, (void*)&clientSocket);
+			serverThread.detach();
 			cout<<"연결된 클라이언트 IP: "<<inet_ntoa(clientAddress.sin_addr)<<endl;
 		}
 
@@ -142,7 +139,6 @@ scoped_sem_t ChatServer:: semaphore;
 
 int main(int argc, char *argv[])
 {
-	printf("test\n");
 	ChatServer *server = new ChatServer("9000");
 	server->Start();
 	return 0;
