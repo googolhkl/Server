@@ -4,109 +4,147 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <semaphore.h>
 
+#include <iostream>
+
 #define BUF_SIZE 100
 #define MAX_CLIENT 256
+#define CONNECTION_REQUEST_WAIT_NUMBER 16
 
-void *handle_client(void *arg);
-void send_message(char *message, int length);
-void error_handling(char *message);
+using std::cout;
+using std::cin;
+using std::endl;
 
-int client_count = 0;
-int client_sockets[MAX_CLIENT];
-static sem_t semaphore;
+class scoped_sem_t
+{
+private:
+	sem_t sem;
+
+public:
+	scoped_sem_t() { sem_init(&sem, 0, 1); }
+	~scoped_sem_t() { sem_destroy(&sem); }
+
+	sem_t& get() { return sem; }
+};
+
+class ChatServer
+{
+private:
+	static uint32_t clientCount;
+	static uint32_t clientSockets[MAX_CLIENT];
+	static scoped_sem_t semaphore;
+
+	int serverSocket;
+	int clientSocket;
+	sockaddr_in serverAddress;
+	sockaddr_in clientAddress;
+	socklen_t clientAddressSize;
+	pthread_t serverThreadId;
+
+public:
+	ChatServer(const char *port)
+	{
+		cout<<"서버 초기화"<<endl;
+		serverSocket = socket(PF_INET, SOCK_STREAM, 0);
+
+		// 주소 할당
+		memset(&serverAddress, 0, sizeof(serverSocket));
+		serverAddress.sin_family = AF_INET;					// 주소체계를 IPv4로 설정
+		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);  // 현재 실행한 서버의 주소
+		serverAddress.sin_port = htons(atoi(port));			// 포트설정
+
+		// 소켓에 인터넷 주소 할당
+		if(bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1)
+			SendException("bind() 에러발생");
+
+	}
+
+	~ChatServer()
+	{
+		cout<<"서버 종료"<<endl;
+		close(serverSocket);
+	}
+
+	void Start()
+	{
+		cout<<"서버 실행"<<endl;
+		if(listen(serverSocket, CONNECTION_REQUEST_WAIT_NUMBER) == -1)
+			SendException("listen() 에러발생");
+
+		while(1)
+		{
+			clientAddressSize = sizeof(clientAddress);
+			clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddressSize);
+
+			// TODO: 벡터로 변경하는걸 고려해보기
+			sem_wait(&(semaphore.get()));
+			clientSockets[clientCount++] = clientSocket;
+			sem_post(&(semaphore.get()));
+
+			pthread_create(&serverThreadId, NULL, ClientHandler, (void*)&clientSocket);
+			pthread_detach(serverThreadId);
+			//std::thread serverThread(ClientHandler);
+			//serverThread.join();
+			cout<<"연결된 클라이언트 IP: "<<inet_ntoa(clientAddress.sin_addr)<<endl;
+		}
+
+	}
+
+	static void *ClientHandler(void *clientSocket)
+	{
+		int socket = *((int*)clientSocket);
+		int stringLength = 0;
+		char message[BUF_SIZE];
+
+		while((stringLength = read(socket, message, sizeof(message))) != 0)
+			SendMessageToAllClients(message, stringLength);
+
+		sem_wait(&(semaphore.get()));
+		for(int i=0; i<clientCount; i++)
+		{
+			if(socket == clientSockets[i])
+			{
+				while(i++ < clientCount-1)
+					clientSockets[i] = clientSockets[i+1];
+				break;
+			}
+		}
+		clientCount--;
+		sem_post(&(semaphore.get()));
+		close(socket);
+		return NULL;
+	}
+
+	static void SendMessageToAllClients(char *message, int messageLength)
+	{
+		sem_wait(&(semaphore.get()));
+		for(int i=0; i<clientCount; i++)
+			send(clientSockets[i], message, messageLength, MSG_DONTWAIT);
+		sem_post(&(semaphore.get()));
+	}
+
+	void SendException(const char *message)
+	{
+		cout<<message<<endl;
+	}
+
+
+};
+
+// 정적 변수 초기화
+uint32_t ChatServer::clientCount= 0;
+uint32_t ChatServer::clientSockets[MAX_CLIENT] = {0,};
+scoped_sem_t ChatServer:: semaphore;
 
 int main(int argc, char *argv[])
 {
-	int server_socket;
-	int client_socket;
-
-	struct sockaddr_in server_address;
-	struct sockaddr_in client_address;
-	socklen_t client_address_size;
-
-	pthread_t thread_id;
-
-	if(argc != 2)
-	{
-		printf("Usage: %s <port>\n", argv[0]);
-		exit(1);
-	}
-
-	sem_init(&semaphore, 0, 1);
-	server_socket = socket(PF_INET,SOCK_STREAM, 0);
-
-	memset(&server_address, 0, sizeof(server_socket));
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_address.sin_port = htons(atoi(argv[1]));
-
-	if(bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address)) == -1)
-		error_handling((char*)"bind() error");  // you should convert const char* to char *
-	
-	if(listen(server_socket, 5) == -1)
-		error_handling((char*)"listen() error");
-
-	while(1)
-	{
-		client_address_size = sizeof(client_address);
-		client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_size);
-
-		sem_wait(&semaphore);
-		client_sockets[client_count++] = client_socket;
-		sem_post(&semaphore);
-
-		pthread_create(&thread_id, NULL, handle_client, (void*)&client_socket);
-		pthread_detach(thread_id);
-		printf("Connected client IP: %s \n", inet_ntoa(client_address.sin_addr));
-
-	}
-	sem_destroy(&semaphore);
-	close(server_socket);
+	printf("test\n");
+	ChatServer *server = new ChatServer("9000");
+	server->Start();
 	return 0;
 }
 
-void *handle_client(void *arg)
-{
-	int client_socket = *((int*)arg);
-	int string_length = 0;
-	int i;
-	char message[BUF_SIZE];
-
-	while((string_length = read(client_socket, message, sizeof(message))) != 0)
-		send_message(message, string_length);
-
-	sem_wait(&semaphore);
-	for(i = 0; i < client_count; i++) // remove disconnected client  TODO: replace with vector
-	{
-		if(client_socket == client_sockets[i])
-		{
-			while(i++ < client_count-1)
-				client_sockets[i] = client_sockets[i+1];
-			break;
-		}
-	}
-	client_count--;
-	sem_post(&semaphore);
-	close(client_socket);
-	return NULL;
-}
-
-void send_message(char *message, int length) // send to all
-{
-	int i;
-	sem_wait(&semaphore);
-	for(i = 0; i < client_count; i++)
-		send(client_sockets[i], message, length, MSG_DONTWAIT);
-	sem_post(&semaphore);
-}
-
-void error_handling(char *message)
-{
-	fputs(message, stderr);
-	fputc('\n', stderr);
-	exit(1);
-}
