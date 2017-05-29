@@ -1,6 +1,7 @@
 CC = g++
 SERVER = server
 CLIENT = client
+SEMAPHORE = static_semaphore
 ALL = $(SERVER) $(CLIENT)
 VERSION = -std=c++11
 
@@ -11,11 +12,14 @@ all: $(ALL)
 
 server: $(SERVER)
 
-$(SERVER): server.o
-	$(CC) $(VERSION) -o $(SERVER) server.o $(THREAD)
+$(SERVER): server.o static_semaphore.o
+	$(CC) $(VERSION) -o $(SERVER) $(SERVER).o $(SEMAPHORE).o $(THREAD)
 
 server.o: server.cc
-	$(CC) $(VERSION) -c -o server.o server.cc 
+	$(CC) $(VERSION) -c -o $(SERVER).o $(SERVER).cc
+
+static_semaphore.o: $(SEMAPHORE).cc
+	$(CC) $(VERSION) -c -o $(SEMAPHORE).o $(SEMAPHORE).cc
 
 
 client: $(CLIENT)
