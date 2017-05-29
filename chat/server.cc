@@ -85,9 +85,3 @@ void ChatServer::SendException(const char *message) {
 uint32_t ChatServer::clientCount= 0;
 uint32_t ChatServer::clientSockets[MAX_CLIENT] = {0,};
 scoped_sem_t ChatServer:: semaphore;
-
-int main(int argc, char *argv[]) {
-	ChatServer *server = new ChatServer("9000");
-	server->Start();
-	return 0;
-}
