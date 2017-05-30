@@ -1,3 +1,6 @@
+#ifndef SERVER_CHAT_CLIENT_HPP
+#define SERVER_CHAT_CLIENT_HPP
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,3 +34,5 @@ public:
 	static void *ReceiveMessage(void *socket);
 	void SendException(const char *message);
 };
+
+#endif

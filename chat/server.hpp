@@ -1,3 +1,6 @@
+#ifndef SERVER_CHAT_SERVER_HPP
+#define SERVER_CHAT_SERVER_HPP
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,3 +44,5 @@ public:
 	static void SendMessageToAllClients(char *message, int messageLength);
 	void SendException(const char *message);
 };
+
+#endif

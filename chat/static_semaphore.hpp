@@ -1,11 +1,6 @@
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <unistd.h>
-//#include <string.h>
-//#include <arpa/inet.h>
-//#include <sys/socket.h>
-//#include <sys/types.h>
-//#include <netinet/in.h>
+#ifndef SERVER_CHAT_STATIC_SEMAPHORE_HPP
+#define SERVER_CHAT_STATIC_SEMAPHORE_HPP
+
 #include <semaphore.h>
 
 #include <iostream>
@@ -21,3 +16,4 @@ public:
         sem_t& get();
 };
 
+#endif
