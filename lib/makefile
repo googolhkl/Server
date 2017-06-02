@@ -1,7 +1,7 @@
 CC = g++
 TEST_PATH = /home/ubuntu/googletest
 LIB = -lgtest -lgmock
-DEPENDENCY_O = test.o rand.o
+DEPENDENCY_O = test.o rand.o time.o
 
 VERSION = -std=c++11
 
@@ -13,6 +13,9 @@ test.o: test.cc
 
 rand.o: rand.cc
 	$(CC) $(VERSION) -c -o rand.o rand.cc
+
+time.o: time.cc
+	$(CC) $(VERSION) -c -o time.o time.cc
 
 clean:
 	rm *.o test
