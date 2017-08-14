@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-
+app.locals.pretty = true; // jade로 생성되는 코드가 보기 좋도록
 app.set('views', './views');
 app.set('view engine', 'pug');
 
@@ -12,7 +12,7 @@ app.get('/', function (req, res) {
 });
 
 app.get('/template', function(req, res) {
-	res.render('temp');
+	res.render('temp', {time: Date(), title: 'googolhkl'});
 
 });
 
