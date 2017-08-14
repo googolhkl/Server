@@ -12,6 +12,8 @@
   "author": "googolhkl",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.15.4"
+    "express": "^4.15.4",
+    "jade": "^1.11.0",
+    "pug": "^2.0.0-rc.3"
   }
 }
