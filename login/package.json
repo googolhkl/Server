@@ -1,0 +1,17 @@
+{
+  "name": "login",
+  "version": "1.0.0",
+  "description": "Login Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Login"
+  ],
+  "author": "googolhkl",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.4"
+  }
+}
