@@ -10,24 +10,39 @@ app.set('view engine', 'pug');
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: false }));  // POST 요청시 Body를 생성하기 위한 모듈
 
+// 홈
 app.get('/', function (req, res) {
-	res.send("This is Send");
-
+	res.render('home', {});
 });
 
-app.get('/template', function(req, res) {
-	res.render('temp', {time: Date(), title: 'googolhkl'});
 
+// 로그인
+app.get('/signin', function(req, res) {
+	res.render('signin', {});
+});
+app.post('/signin', function(req, res) {
+	// TODO: DB에서 검사
+	res.send("로그인 성공");
+
+})
+
+// 회원가입
+app.get('/signup', function(req, res) {
+	res.render('signup', {});
+});
+app.post('/signup', function(req, res) {
+	// TODO: DB에 추가하는 작업 필요
+	let login_id = req.body.login_id;
+	let password = req.body.password;
+	let nickname = req.body.nickname;
+
+	console.log(login_id, password, nickname);
+	res.send("회원 가입 성공")
 });
 
-app.get('/login', function(req, res) {
-	res.render('login', {});
-});
 
-app.post('/login', function(req, res) {
-	res.send(req.body.title + ', ' + req.body.description);
-});
 
 app.listen(3000, function() {
 	console.log("Connected!");
 });
+
