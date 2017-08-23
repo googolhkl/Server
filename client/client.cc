@@ -1,22 +1,13 @@
-#include "httplib.h"
 #include <iostream>
 #include <map>
 
+#include "account_manager.h"
+
 using namespace std;
+
 int main(void)
 {
-	httplib::Client cli("52.78.193.49", 3000);
-	map<string, string> test;
-	test.insert(pair<string, string>("login_id", "test"));
-	test.insert(pair<string, string>("password", "1234qwer"));
-
-	auto res = cli.post("/signin", test);
-	if(res && res->status == 200)
-	{
-		cout<<res->body << endl;
-	}
-	else
-	{
-		cout<<"Response없음"<<endl;
-	}
+	AccountManager* manager = new AccountManager("127.0.0.1", 3000);
+	manager->Login("test", "1234qwer");
+	cout<<"로그인 여부: "<<manager->IsLogged()<<endl;;
 }
