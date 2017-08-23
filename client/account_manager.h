@@ -1,8 +1,6 @@
 #ifndef ACCOUNT_MANAGER_H_
 #define ACCOUNT_MANAGER_H_
 
-#include <iostream>
-
 #include "httplib.h"
 
 class AccountManager

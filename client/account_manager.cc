@@ -1,7 +1,4 @@
 // C, C++, oother.h, my.h
-#include <iostream>
-#include <map>
-
 #include "account_manager.h"
 
 AccountManager::AccountManager(): server_address("52.78.193.49"), server_port(3000)
