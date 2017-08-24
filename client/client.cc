@@ -1,5 +1,4 @@
 #include "game_manager.h"
-#include "account_manager.h"
 
 using namespace std;
 
@@ -7,7 +6,28 @@ int main(void)
 {
 	GameManager* game_manager= new GameManager();
 	game_manager->ShowLoginScreen();
-	//AccountManager* account_manager = new AccountManager("127.0.0.1", 3000);
-	//account_manager->Login("test", "1234qwer");
-	//cout<<"로그인 여부: "<<account_manager->IsLogged()<<endl;;
+    cout<<game_manager->GetUserInput()<<endl;
+
+    /* 로그인 Flow */
+    if(game_manager->GetUserInput() == '1')
+    {
+       string login_id;
+       string password;
+
+       cout<<"아이디: ";
+       cin>>login_id;
+
+       cout<<"비밀번호: ";
+       cin>>password;
+
+
+       bool is_login =  game_manager->Login(login_id, password);
+       cout<<is_login<<endl;
+    }
+    else
+    {
+        cout<<"클라이언트를 종료합니다."<<endl;
+        return 0;
+    }
+
 }
