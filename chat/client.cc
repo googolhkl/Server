@@ -1,3 +1,6 @@
+#include <iostream>
+#include <thread>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +11,8 @@
 #define BUF_SIZE 1024
 
 void error_handling(char *message);
+void* SendMessage(void* socket);
+void* ReceiveMessage(void* socket);
 
 int main(int argc, char* argv[])
 {
@@ -40,30 +45,12 @@ int main(int argc, char* argv[])
 	else
 	{
 		puts("연결됨.............");
+		std::thread senderThread(SendMessage, (void*)&(sock));
+		std::thread receiverThread(ReceiveMessage, (void*)&(sock));
+		senderThread.join();
+		receiverThread.join();
 	}
 
-	while(1)
-	{
-		fputs("문자 입력(Q종료): ", stdout);
-		fgets(message, BUF_SIZE, stdin);
-
-		if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
-			break;
-
-		str_len = write(sock, message, strlen(message));
-
-		recv_len = 0;
-		while(recv_len < str_len)
-		{
-			recv_cnt = read(sock, &message[recv_len], BUF_SIZE-1);
-			if(recv_cnt == -1)
-				error_handling("read() error!");
-			recv_len += recv_cnt;
-		}
-		message[recv_len] = 0;
-		printf("서버로 부터 응답: %s\n", message);
-
-	}
 	close(sock);
 	return 0;
 
@@ -74,4 +61,40 @@ void error_handling(char * message)
 	fputs(message, stderr);
 	fputc('\n', stderr);
 	exit(1);
+}
+
+void* SendMessage(void* socket)
+{
+	int sock = *((int*)socket);
+	char message[BUF_SIZE];
+
+	while(1)
+	{
+		fgets(message, BUF_SIZE, stdin);
+		if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
+		{
+			close(sock);
+			return (void*)0;
+		}
+		send(sock, message, strlen(message) + 1, 0);
+	}
+	return NULL;
+}
+
+void* ReceiveMessage(void *socket)
+{
+	int sock = *((int*)socket);
+	char message[BUF_SIZE];
+
+	while(1)
+	{
+		int stringLength = recv(sock, message, sizeof(message), 0);
+		if(stringLength == -1)
+		{
+			return (void*)-1;
+		}
+		message[stringLength] = 0;
+		fputs(message, stdout);
+	}
+	return NULL;
 }
