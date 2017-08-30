@@ -13,16 +13,23 @@ UserController::~UserController()
 void UserController::AddUser(User* user)
 {
 	this->users.insert(std::pair<unsigned int, User*>(user->GetID(), user));
+	this->userSockets.insert(std::pair<unsigned int, unsigned int>(user->GetSocket(), user->GetID()));
 }
 
 void UserController::RemoveUser(unsigned int id)
 {
+	this->userSockets.erase(this->GetUserSocket(id));
 	this->users.erase(id);
 }
 
 User* UserController::GetUser(unsigned int id)
 {
 	return this->users.find(id)->second;
+}
+
+unsigned int UserController::GetUserIdBySocket(unsigned int socket)
+{
+	return this->userSockets.find(socket)->second;
 }
 
 std::map<unsigned int, User*> UserController::GetUsers()

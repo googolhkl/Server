@@ -12,6 +12,7 @@
 class UserController {
 private:
 	std::map<unsigned int, User*> users;
+	std::map<unsigned int, unsigned int> userSockets;
 
 public:
 	UserController();
@@ -21,6 +22,7 @@ public:
 	void RemoveUser(unsigned int id);
 
 	User* GetUser(unsigned int id);
+	unsigned int GetUserIdBySocket(unsigned int socket);
 	std::map<unsigned int, User*> GetUsers();
 	unsigned int GetAllUserCount();
 	unsigned int GetUserSocket(unsigned int id);

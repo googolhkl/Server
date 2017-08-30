@@ -35,5 +35,7 @@ int main()
 	{
 		std::cout<< "(" << iter->first << ", " << (iter->second)->GetNickName() << ")" <<std::endl;;
 	}
-	std::cout<<"User Socket: "<<userController->GetUserSocket(1)<<std::endl;
+	//std::cout<<"User Socket: "<<userController->GetUserSocket(1)<<std::endl;
+
+	//std::cout<<"UserID: "<<userController->GetUserIdBySocket(11)<<std::endl;
 }

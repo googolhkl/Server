@@ -10,13 +10,13 @@
 
 #include <sys/epoll.h>
 #include <sys/types.h>
-//#include <netinet/in.h>
 #include <semaphore.h>
 
 #include <iostream>
 #include <thread>
 
 #include "static_semaphore.h"
+#include "user_controller.h"
 
 #define BUF_SIZE 5
 #define MAX_CLIENT 256
@@ -29,9 +29,8 @@ using std::endl;
 
 class ChatServer {
 private:
-	static int clientCount;
-	static int clientSockets[MAX_CLIENT];
 	static scoped_sem_t semaphore;
+	static UserController* userController;
 
 	int serverSocket;
 	int clientSocket;
@@ -48,7 +47,7 @@ public:
 	ChatServer(const char *port);
 	~ChatServer();
 	void Start();
-	static void *ClientHandler(void *clientSocket, void *Count, void *clientSockets, void *ep);
+	static void *ClientHandler(void *clientSocket, void *ep);
 	static void SendMessageToAllClients(char *message, int messageLength);
 	void SendException(const char *message);
 	void SetNonBlockingMode(int fd);

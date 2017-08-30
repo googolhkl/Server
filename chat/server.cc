@@ -57,13 +57,16 @@ void ChatServer::Start()
 				epoll_ctl(epfd, EPOLL_CTL_ADD, clientSocket, &event);
 
 				sem_wait(&(semaphore.get()));
-				clientSockets[clientCount++] = clientSocket;
+				User* user = new User(clientSocket, "tester");  // TODO: 실제 유저 정보로 채워 넣기
+				user->SetSocket(clientSocket);
+				userController->AddUser(user);
 				sem_post(&(semaphore.get()));
-				cout<<"들어옴: "<<clientSocket<<", 총 인원: "<<clientCount<<endl;
+
+				cout<<"들어옴: "<<user->GetNickName()<<", 총 인원: "<<userController->GetAllUserCount()<<endl;
 			}
 			else
 			{
-				std::thread serverThread(ClientHandler, (void*)&(ep_events[i].data.fd), (void*)&(clientCount), (void*)clientSockets, (void*)&(epfd));
+				std::thread serverThread(ClientHandler, (void*)&(ep_events[i].data.fd),(void*)&(epfd));
 				serverThread.detach();
 			}
 		}
@@ -72,7 +75,7 @@ void ChatServer::Start()
 	close(epfd);
 }
 
-void* ChatServer::ClientHandler(void *clientSocket, void *Count, void *clientSockets, void *ep)
+void* ChatServer::ClientHandler(void *clientSocket, void *ep)
 {
 	int socket = *((int*)clientSocket);
 	int epf = *((int*)ep);
@@ -89,41 +92,22 @@ void* ChatServer::ClientHandler(void *clientSocket, void *Count, void *clientSoc
 		else if(str_len == 0)
 		{
 			sem_wait(&(semaphore.get()));
-			for(int j=0; j < *((int*)Count); j++)
-			{
-				if(socket == ((int*)clientSockets)[j])
-				{
-					while(j++ < *((int*)Count) -1)
-					{
-						((int*)clientSockets)[j] = ((int*)clientSockets)[j+1];
-						(*((int*)Count))--;
-
-					}
-					if(*((int*)Count) == 1)
-					{
-						((int*)clientSockets)[0] = 0;
-						(*((int*)Count)) = 0;
-					}
-					break;
-				}
-			}
+			userController->RemoveUser(userController->GetUserIdBySocket(socket));
 			sem_post(&(semaphore.get()));
 			epoll_ctl(epf, EPOLL_CTL_DEL, socket, NULL);
 			close(socket);
-			cout<<"이탈함: "<<socket<<", 총 인원: "<<*((int*)Count)<<endl;
-			for(int k=0; k<*((int*)Count); k++)
-			{
-				cout<<((int*)clientSockets)[k]<<", ";
-			}
-			cout<<endl;
+			cout<<"이탈함: "<<socket<<", 총 인원: "<<userController->GetAllUserCount()<<endl;
 			break;
 		}
 		else
 		{
+			// 모든 유저에게 전송
 			sem_wait(&(semaphore.get()));
-			for(int i=0; i< *((int *)Count); i++)
+			std::map<unsigned int, User*> users = userController->GetUsers();
+			std::map<unsigned int, User*>::iterator iter;
+			for(iter = users.begin(); iter != users.end(); iter++)
 			{
-				write(((int *)clientSockets)[i], message, str_len);
+				write(iter->first, message, str_len);
 			}
 			sem_post(&(semaphore.get()));
 		}
@@ -141,6 +125,5 @@ void ChatServer::SetNonBlockingMode(int fd)
 	fcntl(fd, F_SETFL, flag | O_NONBLOCK);
 }
 
-int ChatServer::clientCount = 0;
-int ChatServer::clientSockets[MAX_CLIENT] = {0,};
+UserController* ChatServer::userController = new UserController();
 scoped_sem_t ChatServer:: semaphore;
