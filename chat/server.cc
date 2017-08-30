@@ -1,4 +1,6 @@
 #include "server.h"
+#include <fcntl.h>
+#include <errno.h>
 
 ChatServer::ChatServer(const char* port)
 {
@@ -30,6 +32,7 @@ void ChatServer::Start()
 	epfd = epoll_create(EPOLL_SIZE);
 	ep_events = (epoll_event*)malloc(sizeof(struct epoll_event) * EPOLL_SIZE);
 
+	SetNonBlockingMode(serverSocket);
 	event.events = EPOLLIN;
 	event.data.fd = serverSocket;
 	epoll_ctl(epfd, EPOLL_CTL_ADD, serverSocket, &event);
@@ -48,38 +51,19 @@ void ChatServer::Start()
 			{
 				clientAddressSize = sizeof(clientAddress);
 				clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddressSize);
-				event.events = EPOLLIN;
+				SetNonBlockingMode(clientSocket);
+				event.events = EPOLLIN | EPOLLET;
 				event.data.fd = clientSocket;
 				epoll_ctl(epfd, EPOLL_CTL_ADD, clientSocket, &event);
+
+				sem_wait(&(semaphore.get()));
 				clientSockets[clientCount++] = clientSocket;
+				sem_post(&(semaphore.get()));
 			}
 			else
 			{
-				int str_len = read(ep_events[i].data.fd, buf, BUF_SIZE);
-				if(str_len == 0)
-				{
-					for(int j=0; j < clientCount; j++)
-					{
-						if(ep_events[i].data.fd == clientSockets[j])
-						{
-							while(j++ < clientCount -1)
-							{
-								clientSockets[j] = clientSockets[j+1];
-								clientCount--;
-							}
-							break;
-						}
-					}
-					epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
-					close(ep_events[i].data.fd);
-				}
-				else
-				{
-					for(int i=0; i<clientCount; i++)
-					{
-						write(clientSockets[i], buf, str_len);
-					}
-				}
+				std::thread serverThread(ClientHandler, (void*)&(ep_events[i].data.fd), (void*)&(clientCount), (void*)clientSockets, (void*)&(epfd));
+				serverThread.detach();
 			}
 		}
 	}
@@ -87,12 +71,69 @@ void ChatServer::Start()
 	close(epfd);
 }
 
+void* ChatServer::ClientHandler(void *clientSockets, void *Count, void *client_sockets, void *ep)
+{
+	int socket = *((int*)clientSockets);
+	int epf = *((int*)ep);
+	char message[BUF_SIZE];
+
+	while(1)
+	{
+		int str_len = read(socket, message, BUF_SIZE);
+		if(str_len < 0)
+		{
+			if(errno==EAGAIN)
+				break;
+		}
+		else if(str_len == 0)
+		{
+			sem_wait(&(semaphore.get()));
+			for(int j=0; j < *((int*)Count); j++)
+			{
+				if(socket == ((int*)clientSockets)[j])
+				{
+					while(j++ < *((int*)Count) -1)
+					{
+						((int*)clientSockets)[j] = ((int*)clientSockets)[j+1];
+						(*((int*)Count))--;
+
+					}
+					if(*((int*)Count) == 1)
+					{
+						((int*)clientSockets)[0] = 0;
+						(*((int*)Count)) = 0;
+					}
+					break;
+				}
+			}
+			sem_post(&(semaphore.get()));
+			epoll_ctl(epf, EPOLL_CTL_DEL, socket, NULL);
+			close(socket);
+			break;
+		}
+		else
+		{
+			sem_wait(&(semaphore.get()));
+			for(int i=0; i< *((int *)Count); i++)
+			{
+				write(((int *)client_sockets)[i], message, str_len);
+			}
+			sem_post(&(semaphore.get()));
+		}
+	}
+}
 
 void ChatServer::SendException(const char* message)
 {
 	cout<<message<<endl;
 }
 
-uint32_t ChatServer::clientCount = 0;
-uint32_t ChatServer::clientSockets[MAX_CLIENT] = {0,};
+void ChatServer::SetNonBlockingMode(int fd)
+{
+	int flag = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flag | O_NONBLOCK);
+}
+
+int ChatServer::clientCount = 0;
+int ChatServer::clientSockets[MAX_CLIENT] = {0,};
 scoped_sem_t ChatServer:: semaphore;

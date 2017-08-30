@@ -18,7 +18,7 @@
 
 #include "static_semaphore.h"
 
-#define BUF_SIZE 100
+#define BUF_SIZE 5
 #define MAX_CLIENT 256
 #define CONNECTION_REQUEST_WAIT_NUMBER 16
 #define EPOLL_SIZE 30
@@ -29,8 +29,8 @@ using std::endl;
 
 class ChatServer {
 private:
-	static uint32_t clientCount;
-	static uint32_t clientSockets[MAX_CLIENT];
+	static int clientCount;
+	static int clientSockets[MAX_CLIENT];
 	static scoped_sem_t semaphore;
 
 	int serverSocket;
@@ -48,9 +48,10 @@ public:
 	ChatServer(const char *port);
 	~ChatServer();
 	void Start();
-	static void *ClientHandler(void *clientSocket);
+	static void *ClientHandler(void *clientSocket, void *Count, void *client_sockets, void *ep);
 	static void SendMessageToAllClients(char *message, int messageLength);
 	void SendException(const char *message);
+	void SetNonBlockingMode(int fd);
 };
 
 #endif
