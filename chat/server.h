@@ -48,7 +48,7 @@ public:
 	ChatServer(const char *port);
 	~ChatServer();
 	void Start();
-	static void *ClientHandler(void *clientSocket, void *Count, void *client_sockets, void *ep);
+	static void *ClientHandler(void *clientSocket, void *Count, void *clientSockets, void *ep);
 	static void SendMessageToAllClients(char *message, int messageLength);
 	void SendException(const char *message);
 	void SetNonBlockingMode(int fd);

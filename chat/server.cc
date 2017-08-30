@@ -59,6 +59,7 @@ void ChatServer::Start()
 				sem_wait(&(semaphore.get()));
 				clientSockets[clientCount++] = clientSocket;
 				sem_post(&(semaphore.get()));
+				cout<<"들어옴: "<<clientSocket<<", 총 인원: "<<clientCount<<endl;
 			}
 			else
 			{
@@ -71,9 +72,9 @@ void ChatServer::Start()
 	close(epfd);
 }
 
-void* ChatServer::ClientHandler(void *clientSockets, void *Count, void *client_sockets, void *ep)
+void* ChatServer::ClientHandler(void *clientSocket, void *Count, void *clientSockets, void *ep)
 {
-	int socket = *((int*)clientSockets);
+	int socket = *((int*)clientSocket);
 	int epf = *((int*)ep);
 	char message[BUF_SIZE];
 
@@ -109,6 +110,12 @@ void* ChatServer::ClientHandler(void *clientSockets, void *Count, void *client_s
 			sem_post(&(semaphore.get()));
 			epoll_ctl(epf, EPOLL_CTL_DEL, socket, NULL);
 			close(socket);
+			cout<<"이탈함: "<<socket<<", 총 인원: "<<*((int*)Count)<<endl;
+			for(int k=0; k<*((int*)Count); k++)
+			{
+				cout<<((int*)clientSockets)[k]<<", ";
+			}
+			cout<<endl;
 			break;
 		}
 		else
@@ -116,7 +123,7 @@ void* ChatServer::ClientHandler(void *clientSockets, void *Count, void *client_s
 			sem_wait(&(semaphore.get()));
 			for(int i=0; i< *((int *)Count); i++)
 			{
-				write(((int *)client_sockets)[i], message, str_len);
+				write(((int *)clientSockets)[i], message, str_len);
 			}
 			sem_post(&(semaphore.get()));
 		}
