@@ -1,17 +1,22 @@
 #include "user.h"
 
-User::User(unsigned int id, const char* nickName)
+User::User() 
 {
-	std::cout<<"생성자!"<<std::endl;
+	id = 0;
+	nickName = "";
+	socket = 0;
+}
+User::User(unsigned int id, std::string nickName)
+{
+	std::cout<<"생성자: "<<id<<std::endl;
 	this->id = id;
-	this->nickName = new char[strlen(nickName) + 1];
-	strcpy(this->nickName, nickName);
+	this->nickName = nickName;
+	socket = 0;
 }
 
 User::~User()
 {
-	std::cout<<"소멸자!"<<std::endl;
-	delete []this->nickName;
+	std::cout<<"소멸자: "<<this->id<<std::endl;
 }
 
 
@@ -21,7 +26,7 @@ unsigned int User::GetID()
 	return this->id;
 }
 
-char* User::GetNickName()
+std::string User::GetNickName()
 {
 	return this->nickName;
 }
@@ -38,11 +43,9 @@ void User::SetID(unsigned int id)
 	this->id = id;
 }
 
-void User::SetNickName(char* nickName)
+void User::SetNickName(std::string nickName)
 {
-	delete []this->nickName;
-	this->nickName = new char[strlen(nickName) + 1];
-	strcpy(this->nickName, nickName);
+	this->nickName = nickName;
 }
 
 void User::SetSocket(unsigned int socket)

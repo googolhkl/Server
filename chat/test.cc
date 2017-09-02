@@ -1,3 +1,5 @@
+// g++ -o t test.cc user.cc user_controller.cc
+
 #include "user.h"
 #include "user_controller.h"
 
@@ -38,4 +40,27 @@ int main()
 	//std::cout<<"User Socket: "<<userController->GetUserSocket(1)<<std::endl;
 
 	//std::cout<<"UserID: "<<userController->GetUserIdBySocket(11)<<std::endl;
+	delete user1;
+	delete user2;
+	delete user3;
+
+	std::cout<<std::endl<<std::endl<<"시리얼 라이저 테스트"<<std::endl;
+	// 쓰기
+	User user_test1 = User(999, "user_test1");
+	std::ofstream ofs("hello.txt");
+	boost::archive::text_oarchive oa(ofs);
+	oa << user_test1;
+	ofs.close();
+	std::cout<<"쓸 객체\n"<<"ID: "<<user_test1.GetID()<<std::endl<<"NickName: "<<user_test1.GetNickName()<<std::endl<<"Socket: "<< user_test1.GetSocket()<<std::endl<<std::endl;
+
+	// 읽기
+	User user_test2;
+	std::ifstream ifs("hello.txt");
+	boost::archive::text_iarchive ia(ifs);
+	ia >> user_test2;;
+	ifs.close();
+
+	std::cout<<"ID: "<<user_test2.GetID()<<std::endl;
+	std::cout<<"NickName: "<<user_test2.GetNickName()<<std::endl;
+	std::cout<<"Socket: "<<user_test2.GetSocket()<<std::endl;
 }
