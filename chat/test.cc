@@ -1,4 +1,4 @@
-// g++ -o t test.cc user.cc user_controller.cc
+// g++ -std=c++11 -o t test.cc user.cc user_controller.cc -lboost_serialization
 
 #include "user.h"
 #include "user_controller.h"
@@ -47,20 +47,28 @@ int main()
 	std::cout<<std::endl<<std::endl<<"시리얼 라이저 테스트"<<std::endl;
 	// 쓰기
 	User user_test1 = User(999, "user_test1");
+	User user_test11 = User(888, "user_test11");
 	std::ofstream ofs("hello.txt");
 	boost::archive::text_oarchive oa(ofs);
-	oa << user_test1;
+	oa << user_test1 << user_test11;
 	ofs.close();
 	std::cout<<"쓸 객체\n"<<"ID: "<<user_test1.GetID()<<std::endl<<"NickName: "<<user_test1.GetNickName()<<std::endl<<"Socket: "<< user_test1.GetSocket()<<std::endl<<std::endl;
 
 	// 읽기
 	User user_test2;
+	User user_test3;
 	std::ifstream ifs("hello.txt");
 	boost::archive::text_iarchive ia(ifs);
-	ia >> user_test2;;
+	ia >> user_test2 >> user_test3;
 	ifs.close();
 
+	std::cout<<"가져올 객체1"<<std::endl;
 	std::cout<<"ID: "<<user_test2.GetID()<<std::endl;
 	std::cout<<"NickName: "<<user_test2.GetNickName()<<std::endl;
 	std::cout<<"Socket: "<<user_test2.GetSocket()<<std::endl;
+
+	std::cout<<"가져올 객체2"<<std::endl;
+	std::cout<<"ID: "<<user_test3.GetID()<<std::endl;
+	std::cout<<"NickName: "<<user_test3.GetNickName()<<std::endl;
+	std::cout<<"Socket: "<<user_test3.GetSocket()<<std::endl;
 }
