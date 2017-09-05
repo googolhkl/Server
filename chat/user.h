@@ -18,19 +18,9 @@
 
 class User {
 private:
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version)
-	{
-		ar &id;
-		ar &nickName;
-		ar &socket;
-	}
-
 	unsigned int id;
 	std::string nickName;
 	unsigned int socket;
-
 
 public:
 	User();
